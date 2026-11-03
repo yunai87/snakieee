@@ -28,7 +28,6 @@ import BackgroundMusic from './utils/BackgroundMusic';
 import {
   createFixedStepper,
   drawAsset,
-  drawBackground,
   formatTime,
   gameAudio,
   GameState,
@@ -51,7 +50,6 @@ const BACKGROUND_MUSIC_URL = 'assets/audio/bgm_cyber_groove.mp3';
 
 // Discovered Image Assets
 const ASSETS_MANIFEST: Record<string, string> = {
-  bg: 'assets/images/bg_neon_grid.png',
   serpentHead: 'assets/images/serpent_head.png',
   foodCore: 'assets/images/food_core.png',
   hazardMine: 'assets/images/hazard_mine.png',
@@ -155,11 +153,14 @@ export default function App() {
   const scorePerFood = getConfig('scorePerFood') as number;
 
   // Grid layout geometry within canvas
-  const cellSize = 28;
-  const arenaPixelWidth = gridSize * cellSize; // 504 at 18x18
-  const arenaPixelHeight = gridSize * cellSize; // 504 at 18x18
-  const arenaX = Math.floor((canvasWidth - arenaPixelWidth) / 2); // 436
-  const arenaY = Math.floor((canvasHeight - arenaPixelHeight) / 2); // 132
+  // Arena fills the canvas height, leaving room for coordinate labels and the legend bar
+  const legendGap = 6;
+  const legendHeight = 28;
+  const cellSize = Math.floor((canvasHeight - 40 - legendGap - legendHeight) / gridSize); // 38 at 18x18
+  const arenaPixelWidth = gridSize * cellSize;
+  const arenaPixelHeight = gridSize * cellSize;
+  const arenaX = Math.floor((canvasWidth - arenaPixelWidth) / 2);
+  const arenaY = Math.floor((canvasHeight - arenaPixelHeight - legendGap - legendHeight) / 2);
 
   if (!stepperRef.current) {
     const stepMs = getConfig('stepMs');
@@ -1037,90 +1038,245 @@ export default function App() {
       ctx.translate(shakeX, shakeY);
     }
 
-    // 1. Draw Background
-    drawBackground(
-      ctx,
-      assets['bg'],
-      canvasWidth,
-      canvasHeight,
-      THEME.colors.bgDark,
+    // 1. HUD Backdrop (navy gradient, side circuit decor, status text)
+    const bgGrad = ctx.createRadialGradient(
+      canvasWidth / 2,
+      canvasHeight / 2,
+      80,
+      canvasWidth / 2,
+      canvasHeight / 2,
+      canvasWidth * 0.7,
     );
-
-    // Dim the background so its own neon grid doesn't compete with the arena grid
-    ctx.fillStyle = 'rgba(2, 6, 23, 0.6)';
+    bgGrad.addColorStop(0, '#0c1a2b');
+    bgGrad.addColorStop(1, '#040912');
+    ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-    // 2. Cyber Arena Floor Backdrop
+    // Outer frame
     ctx.save();
-    // Dark margin around the arena keeps background lines off the border
-    const arenaMargin = 16;
-    ctx.fillStyle = '#020617';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-    ctx.shadowBlur = 30;
-    ctx.fillRect(
-      arenaX - arenaMargin,
-      arenaY - arenaMargin,
-      arenaPixelWidth + arenaMargin * 2,
-      arenaPixelHeight + arenaMargin * 2,
-    );
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#050a16';
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.18)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(10, 6, canvasWidth - 20, canvasHeight - 12, 14);
+    ctx.stroke();
+    ctx.restore();
+
+    const now = Date.now();
+    const sidePanelW = arenaX - 70;
+    const drawSideDecor = (side: 'left' | 'right') => {
+      ctx.save();
+      if (side === 'right') {
+        // Mirror the left-hand decor onto the right side
+        ctx.translate(canvasWidth, 0);
+        ctx.scale(-1, 1);
+      }
+      const x0 = 40;
+      const w = sidePanelW;
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.16)';
+      ctx.lineWidth = 1.2;
+      // Bracket-shaped circuit trace
+      ctx.beginPath();
+      ctx.moveTo(x0, 92);
+      ctx.lineTo(x0 + w * 0.42, 92);
+      ctx.lineTo(x0 + w * 0.6, 130);
+      ctx.lineTo(x0 + w * 0.6, canvasHeight * 0.52);
+      ctx.lineTo(x0 + w * 0.35, canvasHeight * 0.64);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x0 + w * 0.12, 130);
+      ctx.lineTo(x0 + w * 0.12, canvasHeight * 0.55);
+      ctx.lineTo(x0 + w * 0.32, canvasHeight * 0.6);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x0 + w * 0.25, 190);
+      ctx.lineTo(x0 + w * 0.45, 222);
+      ctx.lineTo(x0 + w * 0.55, 222);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x0 + w * 0.2, canvasHeight * 0.84);
+      ctx.lineTo(x0 + w * 0.5, canvasHeight * 0.72);
+      ctx.lineTo(x0 + w * 0.9, canvasHeight * 0.72);
+      ctx.stroke();
+      // Node dots
+      ctx.fillStyle = 'rgba(0, 240, 255, 0.35)';
+      const dots: [number, number][] = [
+        [x0 + w * 0.42, 92],
+        [x0 + w * 0.6, canvasHeight * 0.52],
+        [x0 + w * 0.35, canvasHeight * 0.64],
+        [x0 + w * 0.32, canvasHeight * 0.6],
+        [x0 + w * 0.55, 222],
+        [x0 + w * 0.9, canvasHeight * 0.72],
+        [x0 + w * 0.8, 160],
+        [x0 + w * 0.05, canvasHeight * 0.9],
+      ];
+      dots.forEach(([dx, dy]) => {
+        ctx.beginPath();
+        ctx.arc(dx, dy, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      // Hollow ring accents
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.22)';
+      ctx.beginPath();
+      ctx.arc(x0 + 6, 26, 5, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(arenaX - 22, canvasHeight * 0.44, 6, 0, Math.PI * 2);
+      ctx.stroke();
+      // Animated level bars
+      for (let i = 0; i < 12; i++) {
+        const h = 6 + Math.abs(Math.sin(now / 600 + i * 0.7)) * 12;
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.28)';
+        ctx.fillRect(x0 + i * 6, 70 + (18 - h), 3, h);
+      }
+      ctx.restore();
+    };
+    drawSideDecor('left');
+    drawSideDecor('right');
+
+    // HUD status text
+    ctx.save();
+    ctx.font = '10px "Chakra Petch", monospace';
+    ctx.fillStyle = 'rgba(0, 240, 255, 0.4)';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    ctx.fillText('SEC-07 // CYBERNETIC GRID MATRIX', 40, 46);
+    ctx.fillText(`SYSTEM STATUS: ${gameStateRef.current.status}`, 40, 59);
+    ctx.textAlign = 'right';
+    ctx.fillText('SUB-SYS: POSITIVE TRACKING', canvasWidth - 40, 46);
+    ctx.fillText('FREQUENCY DYNAMICS: ACTIVE', canvasWidth - 40, 59);
+    ctx.restore();
+
+    // 2. Cyber Arena Floor
+    ctx.save();
+    ctx.fillStyle = '#050b16';
     ctx.fillRect(arenaX, arenaY, arenaPixelWidth, arenaPixelHeight);
 
-    // Subtle 24x24 coordinate mesh
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
+    // Checkered cells
+    ctx.fillStyle = 'rgba(0, 240, 255, 0.035)';
+    for (let gx = 0; gx < gridSize; gx++) {
+      for (let gy = 0; gy < gridSize; gy++) {
+        if ((gx + gy) % 2 === 0) {
+          ctx.fillRect(arenaX + gx * cellSize, arenaY + gy * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.1)';
     ctx.lineWidth = 1;
     for (let i = 0; i <= gridSize; i++) {
       const px = arenaX + i * cellSize;
       const py = arenaY + i * cellSize;
-      // Vertical line
       ctx.beginPath();
       ctx.moveTo(px, arenaY);
       ctx.lineTo(px, arenaY + arenaPixelHeight);
       ctx.stroke();
-      // Horizontal line
       ctx.beginPath();
       ctx.moveTo(arenaX, py);
       ctx.lineTo(arenaX + arenaPixelWidth, py);
       ctx.stroke();
     }
 
-    // Glowing Arena Perimeter Borders & Hazard Warning Corners
-    ctx.strokeStyle = '#00f0ff';
+    // Intersection dots
+    ctx.fillStyle = 'rgba(0, 255, 170, 0.35)';
+    for (let gx = 1; gx < gridSize; gx++) {
+      for (let gy = 1; gy < gridSize; gy++) {
+        ctx.fillRect(arenaX + gx * cellSize - 1, arenaY + gy * cellSize - 1, 2, 2);
+      }
+    }
+
+    // Coordinate labels every 6 cells
+    ctx.font = '9px "Chakra Petch", monospace';
+    ctx.fillStyle = 'rgba(0, 240, 255, 0.45)';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i <= gridSize; i += 6) {
+      ctx.textAlign = 'center';
+      ctx.fillText(String(i), arenaX + i * cellSize + 10, arenaY - 8);
+      ctx.textAlign = 'right';
+      ctx.fillText(String(i), arenaX - 6, arenaY + i * cellSize + 10);
+    }
+
+    // Glowing green-cyan border
+    const borderGrad = ctx.createLinearGradient(
+      arenaX,
+      arenaY,
+      arenaX + arenaPixelWidth,
+      arenaY + arenaPixelHeight,
+    );
+    borderGrad.addColorStop(0, '#00f0ff');
+    borderGrad.addColorStop(1, '#00ff88');
+    ctx.strokeStyle = borderGrad;
     ctx.lineWidth = 2.5;
-    ctx.shadowColor = '#00f0ff';
-    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#00ffc8';
+    ctx.shadowBlur = 14;
     ctx.strokeRect(arenaX, arenaY, arenaPixelWidth, arenaPixelHeight);
     ctx.shadowBlur = 0;
 
-    // Corner Tech Brackets
-    const bracketSize = 20;
+    // Corner brackets
+    const bracketSize = 22;
     ctx.strokeStyle = '#00ff88';
     ctx.lineWidth = 3;
-    // Top-Left
+    const corners: [number, number, number, number][] = [
+      [arenaX, arenaY, 1, 1],
+      [arenaX + arenaPixelWidth, arenaY, -1, 1],
+      [arenaX, arenaY + arenaPixelHeight, 1, -1],
+      [arenaX + arenaPixelWidth, arenaY + arenaPixelHeight, -1, -1],
+    ];
+    corners.forEach(([cx, cy, sx, sy]) => {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + sy * bracketSize);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(cx + sx * bracketSize, cy);
+      ctx.stroke();
+    });
+
+    // Legend bar under the arena
+    const legendY = arenaY + arenaPixelHeight + legendGap;
+    ctx.fillStyle = 'rgba(3, 8, 18, 0.9)';
+    ctx.fillRect(arenaX, legendY, arenaPixelWidth, legendHeight);
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(arenaX + 0.5, legendY + 0.5, arenaPixelWidth - 1, legendHeight - 1);
+    const ly = legendY + legendHeight / 2;
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 11px "Chakra Petch", sans-serif';
+    ctx.fillStyle = '#00f0ff';
+    ctx.fillText('戰場圖例 MAP ENTITIES:', arenaX + 12, ly);
+    ctx.font = '11px "Chakra Petch", sans-serif';
+    const legendStart = arenaX + 190;
+    const legendStep = (arenaPixelWidth - 200) / 4;
+    // Energy core
+    let lx = legendStart;
+    ctx.fillStyle = '#00ff88';
     ctx.beginPath();
-    ctx.moveTo(arenaX, arenaY + bracketSize);
-    ctx.lineTo(arenaX, arenaY);
-    ctx.lineTo(arenaX + bracketSize, arenaY);
-    ctx.stroke();
-    // Top-Right
+    ctx.arc(lx + 5, ly, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillText(`能量核心 (+${scorePerFood})`, lx + 15, ly);
+    // Mine
+    lx += legendStep;
+    ctx.strokeStyle = '#ff0055';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(arenaX + arenaPixelWidth - bracketSize, arenaY);
-    ctx.lineTo(arenaX + arenaPixelWidth, arenaY);
-    ctx.lineTo(arenaX + arenaPixelWidth, arenaY + bracketSize);
+    ctx.arc(lx + 5, ly, 5, 0, Math.PI * 2);
     ctx.stroke();
-    // Bottom-Left
+    ctx.fillStyle = '#ff4d7e';
+    ctx.fillText('危險地雷（陷阱）', lx + 15, ly);
+    // Snake body
+    lx += legendStep;
+    ctx.fillStyle = '#00f0ff';
     ctx.beginPath();
-    ctx.moveTo(arenaX, arenaY + arenaPixelHeight - bracketSize);
-    ctx.lineTo(arenaX, arenaY + arenaPixelHeight);
-    ctx.lineTo(arenaX + bracketSize, arenaY + arenaPixelHeight);
-    ctx.stroke();
-    // Bottom-Right
-    ctx.beginPath();
-    ctx.moveTo(arenaX + arenaPixelWidth - bracketSize, arenaY + arenaPixelHeight);
-    ctx.lineTo(arenaX + arenaPixelWidth, arenaY + arenaPixelHeight);
-    ctx.lineTo(arenaX + arenaPixelWidth, arenaY + arenaPixelHeight - bracketSize);
-    ctx.stroke();
+    ctx.arc(lx + 3, ly, 3, 0, Math.PI * 2);
+    ctx.arc(lx + 10, ly, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillText('賽博蛇身（轉向）', lx + 19, ly);
+    // Shield brake
+    lx += legendStep;
+    ctx.strokeStyle = '#c084fc';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(lx, ly - 5, 10, 10);
+    ctx.fillStyle = '#d8b4fe';
+    ctx.fillText(`護盾煞車 (${brakeDuration}s)`, lx + 15, ly);
     ctx.restore();
 
     // 3. Draw Hazard Mines
@@ -1170,6 +1326,11 @@ export default function App() {
             fbCtx.fillRect(mx + 3, my + 3, cellSize - 6, cellSize - 6);
           },
         );
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#ff4d7e';
+        ctx.font = 'bold 9px "Chakra Petch", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('危險', mx + cellSize / 2, my - 5);
         ctx.restore();
       }
     });
@@ -1196,6 +1357,11 @@ export default function App() {
         fbCtx.fill();
       },
     );
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#00ff88';
+    ctx.font = 'bold 10px "Chakra Petch", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`+${scorePerFood}`, fx + cellSize / 2, fy - 6);
     ctx.restore();
 
     // 5. Draw Turn Assist Flash Indicators beneath Serpent Head
