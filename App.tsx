@@ -4,7 +4,9 @@ import {
   Activity,
   AlertTriangle,
   Camera,
+  CameraOff,
   CheckCircle2,
+  Circle,
   ChevronLeft,
   ChevronRight,
   HelpCircle,
@@ -205,6 +207,10 @@ export default function App() {
   const [tmStatus, setTmStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [tmMessage, setTmMessage] = useState<string>('');
   const [tmTopLabel, setTmTopLabel] = useState<string>('');
+  const [cameraError, setCameraError] = useState<string>('');
+  // Debounced gesture from the camera, and which poses have passed the start-screen test
+  const [tmLiveGesture, setTmLiveGesture] = useState<string>('NEUTRAL');
+  const [poseTestPassed, setPoseTestPassed] = useState<Record<string, boolean>>({});
   const tmModelRef = useRef<{kind: 'image' | 'pose'; model: any} | null>(null);
   const tmPreviewCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -300,9 +306,20 @@ export default function App() {
           webcamVideoRef.current.play();
         }
         setWebcamActive(true);
+        setCameraError('');
         gameAudio.playConfirmSelect();
       } catch (err) {
         console.warn('Webcam permission not granted or unavailable:', err);
+        const name = (err as Error)?.name;
+        setCameraError(
+          name === 'NotAllowedError'
+            ? '鏡頭權限被拒絕。請點網址列左邊的圖示，允許使用相機後再試一次。'
+            : name === 'NotFoundError'
+            ? '找不到鏡頭，請確認電腦有接上相機。'
+            : name === 'NotReadableError'
+            ? '鏡頭正被其他程式使用中（例如視訊會議），請先關掉再試。'
+            : '無法開啟鏡頭，請確認網址是 https 或 localhost。',
+        );
         setWebcamActive(false);
         gameAudio.playErrorBuzz();
       }
@@ -761,6 +778,10 @@ export default function App() {
         // Fire once when a pose is held for 3 frames; must change pose before it fires again
         if (buffer.count === 3 && candidate !== lastFired) {
           lastFired = candidate;
+          setTmLiveGesture(candidate);
+          if (candidate !== 'NEUTRAL') {
+            setPoseTestPassed((prev) => (prev[candidate] ? prev : {...prev, [candidate]: true}));
+          }
           const triggers = tmTriggersRef.current;
           if (candidate === 'LEAN_LEFT') triggers.triggerTurnLeft();
           else if (candidate === 'LEAN_RIGHT') triggers.triggerTurnRight();
@@ -779,6 +800,8 @@ export default function App() {
       cancelled = true;
       cancelAnimationFrame(rafId);
       poseBufferRef.current = {gesture: 'NEUTRAL', count: 0};
+      setTmLiveGesture('NEUTRAL');
+      setPoseTestPassed({});
     };
   }, [webcamActive, tmStatus]);
 
@@ -1350,6 +1373,38 @@ export default function App() {
     !isGameMenuOpen &&
     !isMusicMuted;
 
+  // Teachable Machine model URL field (start screen + in-game camera panel)
+  const tmUrlForm = (
+    <form
+      className="flex gap-1"
+      onSubmit={(e) => {
+        e.preventDefault();
+        loadTmModel(tmUrl);
+      }}>
+      <input
+        value={tmUrl}
+        onChange={(e) => setTmUrl(e.target.value)}
+        onKeyDown={(e) => e.stopPropagation()}
+        placeholder="https://teachablemachine.withgoogle.com/models/xxxx/"
+        className="flex-1 min-w-0 px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200"
+      />
+      <button
+        type="submit"
+        disabled={tmStatus === 'loading'}
+        className="px-2 py-1 rounded bg-cyan-500 text-black font-bold disabled:opacity-50">
+        載入
+      </button>
+    </form>
+  );
+
+  const POSE_TESTS = [
+    {gesture: 'LEAN_LEFT', label: '身體往左傾', action: '左轉'},
+    {gesture: 'LEAN_RIGHT', label: '身體往右傾', action: '右轉'},
+    {gesture: 'SHIELD_FREEZE', label: '雙手交叉', action: '護盾煞車'},
+  ];
+  const allPoseTestsPassed = POSE_TESTS.every((t) => poseTestPassed[t.gesture]);
+  const cameraModeReady = webcamActive && tmStatus === 'ready';
+
   return (
     <div
       className="fixed inset-0 overflow-hidden touch-none flex flex-col items-center justify-between bg-slate-950 text-white select-none"
@@ -1367,7 +1422,7 @@ export default function App() {
       />
 
       {/* Teachable Machine control panel (shown while the camera is on) */}
-      {webcamActive && (
+      {webcamActive && gameState.status !== 'START' && (
         <div className="fixed right-3 top-16 z-40 w-64 p-3 bg-slate-900/95 border border-cyan-500/40 rounded-xl text-xs font-mono flex flex-col gap-2 shadow-[0_0_20px_#00f0ff33]">
           <div className="flex items-center justify-between">
             <span className="text-cyan-400 font-bold">TEACHABLE MACHINE</span>
@@ -1388,26 +1443,7 @@ export default function App() {
             height={160}
             className="w-40 h-40 self-center rounded border border-slate-700 bg-black"
           />
-          <form
-            className="flex gap-1"
-            onSubmit={(e) => {
-              e.preventDefault();
-              loadTmModel(tmUrl);
-            }}>
-            <input
-              value={tmUrl}
-              onChange={(e) => setTmUrl(e.target.value)}
-              onKeyDown={(e) => e.stopPropagation()}
-              placeholder="https://teachablemachine.withgoogle.com/models/xxxx/"
-              className="flex-1 min-w-0 px-2 py-1 rounded bg-slate-950 border border-slate-700 text-slate-200"
-            />
-            <button
-              type="submit"
-              disabled={tmStatus === 'loading'}
-              className="px-2 py-1 rounded bg-cyan-500 text-black font-bold disabled:opacity-50">
-              載入
-            </button>
-          </form>
+          {tmUrlForm}
           {tmMessage && <div className="text-[10px] text-slate-400 break-words">{tmMessage}</div>}
           {tmStatus === 'ready' && (
             <div className="flex justify-between">
@@ -1685,37 +1721,196 @@ export default function App() {
 
       {/* --- START MENU OVERLAY --- */}
       {gameState.status === 'START' && (
-        <MenuOverlay tone="neutral" zIndex={50}>
-          <div className="w-full max-w-lg bg-slate-900/95 border-2 border-cyan-400/80 rounded-2xl p-6 md:p-8 shadow-[0_0_40px_rgba(0,240,255,0.3)] flex flex-col items-center text-center backdrop-blur-md">
-            <div className="w-14 h-14 mb-3 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_#00f0ff]">
-              <Zap size={32} />
-            </div>
-
-            <h1 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 tracking-wider mb-2">
-              KINETIC SERPENT
-            </h1>
-            <p className="text-sm md:text-base text-cyan-200/80 mb-6 font-mono">
-              Steer cyber serpent with body leaning & relative turning. Dodge kinetic mines and trigger emergency freeze barriers!
-            </p>
-
-            <div className="w-full bg-slate-950/80 border border-cyan-500/30 rounded-xl p-4 mb-6 text-left font-mono text-xs text-slate-300 space-y-2">
-              <div className="flex items-center gap-2 text-cyan-400 font-bold">
-                <Shield size={16} /> STEERING PROTOCOLS:
+        <div className="absolute inset-0 z-50 overflow-y-auto touch-auto bg-slate-950/85 backdrop-blur-sm">
+          <div className="min-h-full flex items-center justify-center p-4">
+            <div className="w-full max-w-4xl bg-slate-900/95 border-2 border-cyan-400/80 rounded-2xl p-5 md:p-8 shadow-[0_0_40px_rgba(0,240,255,0.3)]">
+              {/* Title */}
+              <div className="flex flex-col items-center text-center mb-6">
+                <div className="w-14 h-14 mb-3 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_#00f0ff]">
+                  <Zap size={32} />
+                </div>
+                <h1 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 tracking-wider">
+                  KINETIC SERPENT
+                </h1>
+                <p className="mt-1 text-base md:text-lg font-bold text-cyan-200">體感貪吃蛇</p>
+                {highScore > 0 && (
+                  <p className="mt-2 text-xs font-mono text-yellow-400 flex items-center gap-1.5">
+                    <Trophy size={14} /> 最高分 {highScore}
+                  </p>
+                )}
               </div>
-              <p>• <strong>Left Turn:</strong> Lean Left / Arrow Left / A / Virtual L</p>
-              <p>• <strong>Right Turn:</strong> Lean Right / Arrow Right / D / Virtual R</p>
-              <p>• <strong>Shield Freeze:</strong> Arms Crossed / Spacebar / Virtual Shield (3s invulnerable halt)</p>
-              <p className="text-emerald-400">• Eat Energy Cores (+10 pts) — Beware spawning Red Mines!</p>
-            </div>
 
-            <button
-              onClick={initGame}
-              autoFocus
-              className="w-full py-4 px-8 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 font-black text-lg md:text-xl tracking-wider shadow-[0_0_25px_rgba(0,240,255,0.6)] hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3">
-              <Play size={24} /> ENGAGE ARENA
-            </button>
+              <div className="grid md:grid-cols-2 gap-5">
+                {/* Left: how to play + actions */}
+                <div className="flex flex-col gap-4">
+                  <div className="bg-slate-950/80 border border-cyan-500/30 rounded-xl p-4 text-sm text-slate-300 space-y-2">
+                    <div className="flex items-center gap-2 text-cyan-400 font-bold">
+                      <Shield size={16} /> 怎麼玩
+                    </div>
+                    <p>吃掉發光的能量核心得分，避開紅色地雷、牆壁和自己的身體。</p>
+                    <table className="w-full text-xs font-mono">
+                      <thead>
+                        <tr className="text-slate-500">
+                          <th className="text-left font-normal py-1">動作</th>
+                          <th className="text-left font-normal">體感</th>
+                          <th className="text-left font-normal">鍵盤</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="py-1 text-cyan-300">左轉</td>
+                          <td>身體往左傾</td>
+                          <td>← / A</td>
+                        </tr>
+                        <tr>
+                          <td className="py-1 text-cyan-300">右轉</td>
+                          <td>身體往右傾</td>
+                          <td>→ / D</td>
+                        </tr>
+                        <tr>
+                          <td className="py-1 text-purple-300">護盾煞車</td>
+                          <td>雙手交叉</td>
+                          <td>空白鍵</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <p className="text-[11px] text-slate-500">
+                      轉彎是相對蛇頭方向轉 90°。護盾會讓蛇停住 {brakeDuration} 秒，共 {startingBrakeCharges} 次。
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={toggleWebcam}
+                    className={`w-full py-3 px-6 rounded-xl border-2 font-bold text-base flex items-center justify-center gap-2 transition-all active:scale-95 ${
+                      webcamActive
+                        ? 'border-slate-600 text-slate-300 hover:border-slate-400'
+                        : 'border-cyan-400 text-cyan-300 hover:bg-cyan-400/10'
+                    }`}>
+                    {webcamActive ? <CameraOff size={20} /> : <Camera size={20} />}
+                    {webcamActive ? '關閉鏡頭' : '連接鏡頭'}
+                  </button>
+
+                  <button
+                    onClick={initGame}
+                    autoFocus
+                    className="w-full py-4 px-8 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 font-black text-lg md:text-xl tracking-wider shadow-[0_0_25px_rgba(0,240,255,0.6)] hover:brightness-110 active:scale-95 transition-all flex flex-col items-center justify-center">
+                    <span className="flex items-center gap-3">
+                      <Play size={24} /> 開始遊戲
+                    </span>
+                    <span className="text-xs font-bold opacity-70">
+                      {cameraModeReady ? '體感模式（鍵盤也能用）' : '鍵盤模式'}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Right: camera test */}
+                <div className="bg-slate-950/80 border border-cyan-500/30 rounded-xl p-4 flex flex-col gap-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-cyan-400 font-bold flex items-center gap-2">
+                      <Camera size={16} /> 鏡頭測試
+                    </span>
+                    <span
+                      className={`text-xs font-mono ${
+                        !webcamActive
+                          ? 'text-slate-500'
+                          : tmStatus === 'ready'
+                          ? 'text-emerald-400'
+                          : tmStatus === 'error'
+                          ? 'text-red-400'
+                          : 'text-yellow-300'
+                      }`}>
+                      {!webcamActive
+                        ? '未連接'
+                        : tmStatus === 'ready'
+                        ? '就緒'
+                        : tmStatus === 'error'
+                        ? '錯誤'
+                        : '載入模型中...'}
+                    </span>
+                  </div>
+
+                  {webcamActive ? (
+                    <>
+                      <div className="relative self-center">
+                        <canvas
+                          ref={tmPreviewCanvasRef}
+                          width={224}
+                          height={224}
+                          className="w-48 h-48 md:w-56 md:h-56 rounded-lg border border-slate-700 bg-black"
+                        />
+                        {tmStatus === 'ready' && (
+                          <div className="absolute bottom-1 left-1 right-1 px-2 py-1 rounded bg-black/70 text-xs font-mono flex justify-between">
+                            <span className="truncate text-slate-200">{tmTopLabel || '-'}</span>
+                            <span className="text-emerald-400 ml-2">
+                              {(poseConfidence * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {tmStatus === 'ready' ? (
+                        <>
+                          <p className="text-xs text-slate-400">依序做出下面的姿勢，偵測到就會打勾：</p>
+                          <ul className="space-y-1.5">
+                            {POSE_TESTS.map((t) => {
+                              const passed = !!poseTestPassed[t.gesture];
+                              const live = tmLiveGesture === t.gesture;
+                              return (
+                                <li
+                                  key={t.gesture}
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+                                    live
+                                      ? 'border-cyan-400 bg-cyan-400/15'
+                                      : passed
+                                      ? 'border-emerald-500/50 bg-emerald-500/10'
+                                      : 'border-slate-700'
+                                  }`}>
+                                  {passed ? (
+                                    <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />
+                                  ) : (
+                                    <Circle size={18} className="text-slate-600 shrink-0" />
+                                  )}
+                                  <span className="flex-1">{t.label}</span>
+                                  <span className="text-xs text-slate-400">→ {t.action}</span>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                          {allPoseTestsPassed && (
+                            <p className="text-center text-emerald-400 font-bold">全部通過！可以開始遊戲了</p>
+                          )}
+                        </>
+                      ) : (
+                        tmMessage && <p className="text-xs text-slate-400 break-words">{tmMessage}</p>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex-1 min-h-[12rem] flex flex-col items-center justify-center gap-2 text-center text-slate-500 border border-dashed border-slate-700 rounded-lg p-4">
+                      <Camera size={36} />
+                      <p>按「連接鏡頭」用身體控制蛇</p>
+                      <p className="text-xs">站在鏡頭前，讓上半身完整入鏡</p>
+                      {cameraError && (
+                        <p className="mt-2 text-xs text-red-400 flex items-start gap-1.5 text-left">
+                          <AlertTriangle size={14} className="shrink-0 mt-0.5" /> {cameraError}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <details className="text-xs text-slate-400">
+                    <summary className="cursor-pointer select-none">進階：更換 Teachable Machine 模型</summary>
+                    <div className="mt-2 space-y-1.5">
+                      {tmUrlForm}
+                      {tmStatus === 'ready' && tmMessage && (
+                        <p className="text-[10px] break-words">{tmMessage}</p>
+                      )}
+                    </div>
+                  </details>
+                </div>
+              </div>
+            </div>
           </div>
-        </MenuOverlay>
+        </div>
       )}
 
       {/* --- GAME OVER OVERLAY --- */}
