@@ -1400,7 +1400,7 @@ export default function App() {
   const POSE_TESTS = [
     {gesture: 'LEAN_LEFT', label: '身體往左傾', action: '左轉'},
     {gesture: 'LEAN_RIGHT', label: '身體往右傾', action: '右轉'},
-    {gesture: 'SHIELD_FREEZE', label: '雙手交叉', action: '護盾煞車'},
+    {gesture: 'SHIELD_FREEZE', label: '雙手平行', action: '護盾煞車'},
   ];
   const allPoseTestsPassed = POSE_TESTS.every((t) => poseTestPassed[t.gesture]);
   const cameraModeReady = webcamActive && tmStatus === 'ready';
@@ -1666,7 +1666,7 @@ export default function App() {
           </div>
 
           <div className="p-2 bg-slate-950/80 border border-slate-800 rounded text-[10px] text-slate-400">
-            Arms Crossed or Spacebar triggers 3s Emergency Freeze Barrier.
+            Arms Parallel or Spacebar triggers 3s Emergency Freeze Barrier.
           </div>
         </div>
       </main>
@@ -1769,7 +1769,7 @@ export default function App() {
                         </tr>
                         <tr>
                           <td className="py-1 text-purple-300">護盾煞車</td>
-                          <td>雙手交叉</td>
+                          <td>雙手平行</td>
                           <td>空白鍵</td>
                         </tr>
                       </tbody>
@@ -2065,7 +2065,7 @@ export default function App() {
 
               <div>
                 <span className="text-purple-400 font-bold block mb-1">2. EMERGENCY SHIELD BRAKE</span>
-                When trapped in tight corridors or box traps, trigger Shield Brake (Arms Crossed / Spacebar / Virtual Freeze):
+                When trapped in tight corridors or box traps, trigger Shield Brake (Arms Parallel / Spacebar / Virtual Freeze):
                 <ul className="list-disc pl-5 mt-1 space-y-0.5 text-slate-300">
                   <li>Serpent halts in place for 3 full seconds.</li>
                   <li>Generates an invulnerable hexagonal forcefield dome.</li>

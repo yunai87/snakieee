@@ -37,7 +37,7 @@
       "action": "Rotate serpent 90 degrees clockwise relative to its current movement heading."
     },
     {
-      "input": "Arms Crossed (Shield Freeze) / Spacebar / Virtual Shield Button",
+      "input": "Arms Parallel (Shield Freeze) / Spacebar / Virtual Shield Button",
       "action": "Trigger emergency brake: serpent stops in place for 3 seconds while activating an invulnerable energy shield (consumes 1 brake charge)."
     },
     {
