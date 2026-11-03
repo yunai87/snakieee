@@ -1046,9 +1046,25 @@ export default function App() {
       THEME.colors.bgDark,
     );
 
+    // Dim the background so its own neon grid doesn't compete with the arena grid
+    ctx.fillStyle = 'rgba(2, 6, 23, 0.6)';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
     // 2. Cyber Arena Floor Backdrop
     ctx.save();
-    ctx.fillStyle = 'rgba(5, 10, 22, 0.88)';
+    // Dark margin around the arena keeps background lines off the border
+    const arenaMargin = 16;
+    ctx.fillStyle = '#020617';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+    ctx.shadowBlur = 30;
+    ctx.fillRect(
+      arenaX - arenaMargin,
+      arenaY - arenaMargin,
+      arenaPixelWidth + arenaMargin * 2,
+      arenaPixelHeight + arenaMargin * 2,
+    );
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#050a16';
     ctx.fillRect(arenaX, arenaY, arenaPixelWidth, arenaPixelHeight);
 
     // Subtle 24x24 coordinate mesh
