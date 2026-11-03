@@ -96,6 +96,11 @@ interface TurnIndicator {
 // Built-in Teachable Machine pose model (左傾 / 右傾 / 自然狀態 / 暫停)
 const DEFAULT_TM_MODEL_URL = 'https://teachablemachine.withgoogle.com/models/AYRH8wtQQ/';
 
+// Pose detection tuning: lower confidence / fewer frames = faster but more false triggers
+const TM_MIN_CONFIDENCE = 0.7; // model must be at least this sure of a pose
+const TM_CONFIRM_FRAMES = 2; // consecutive matching predictions before acting
+const TM_PREDICT_INTERVAL_MS = 50; // minimum gap between predictions
+
 // Inject a CDN <script> once and resolve when it has loaded
 const scriptPromises: Record<string, Promise<void>> = {};
 function loadScriptOnce(src: string): Promise<void> {
@@ -700,7 +705,7 @@ export default function App() {
     if (webcamActive && tmStatus === 'idle' && tmUrl.trim()) loadTmModel(tmUrl);
   }, [webcamActive, tmStatus, tmUrl, loadTmModel]);
 
-  // Prediction loop: ~10 predictions/sec, >=0.85 confidence, 3 identical frames before dispatching
+  // Prediction loop: dispatch a gesture once it is held for TM_CONFIRM_FRAMES confident frames
   useEffect(() => {
     if (!webcamActive || tmStatus !== 'ready') return;
 
@@ -718,7 +723,7 @@ export default function App() {
       rafId = requestAnimationFrame(tick);
       const video = webcamVideoRef.current;
       const tm = tmModelRef.current;
-      if (busy || cancelled || !tm || !video || video.readyState < 2 || now - lastRun < 100) return;
+      if (busy || cancelled || !tm || !video || video.readyState < 2 || now - lastRun < TM_PREDICT_INTERVAL_MS) return;
       lastRun = now;
       busy = true;
       try {
@@ -766,7 +771,7 @@ export default function App() {
         setPoseConfidence(personVisible ? top.probability : 0);
 
         const candidate =
-          personVisible && top.probability >= 0.85 ? labelToGesture(top.className) : 'NEUTRAL';
+          personVisible && top.probability >= TM_MIN_CONFIDENCE ? labelToGesture(top.className) : 'NEUTRAL';
         const buffer = poseBufferRef.current;
         if (buffer.gesture === candidate) {
           buffer.count += 1;
@@ -776,7 +781,7 @@ export default function App() {
         }
 
         // Fire once when a pose is held for 3 frames; must change pose before it fires again
-        if (buffer.count === 3 && candidate !== lastFired) {
+        if (buffer.count === TM_CONFIRM_FRAMES && candidate !== lastFired) {
           lastFired = candidate;
           setTmLiveGesture(candidate);
           if (candidate !== 'NEUTRAL') {
@@ -1609,7 +1614,7 @@ export default function App() {
             <span className="text-cyan-400 font-bold flex items-center gap-1.5">
               <Zap size={14} /> AI POSTURE PIPELINE
             </span>
-            <span className="text-[10px] text-cyan-300">3-FRAME BUFFER</span>
+            <span className="text-[10px] text-cyan-300">{TM_CONFIRM_FRAMES}-FRAME BUFFER</span>
           </div>
 
           {/* Active Gesture Pill */}
@@ -1632,7 +1637,7 @@ export default function App() {
           <div className="space-y-2 text-[11px]">
             <div className="flex justify-between">
               <span className="text-slate-400">Confidence:</span>
-              <span className="text-emerald-400">{(poseConfidence * 100).toFixed(0)}% (&gt;85% thresh)</span>
+              <span className="text-emerald-400">{(poseConfidence * 100).toFixed(0)}% (&gt;{TM_MIN_CONFIDENCE * 100}% thresh)</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Sensor Mode:</span>
