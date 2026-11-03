@@ -977,12 +977,13 @@ export default function App() {
 
         gameAudio.playCoinPickup();
 
-        // Speed acceleration every 5 cores
+        // Speed up by speedStep (e.g. 0.2 = 20% faster) on every core, capped at minSpeed
+        snakeRef.current.stepInterval = Math.max(
+          minSpeed,
+          snakeRef.current.stepInterval / (1 + speedStep),
+        );
+
         if (newCount % 5 === 0) {
-          snakeRef.current.stepInterval = Math.max(
-            minSpeed,
-            snakeRef.current.stepInterval - speedStep,
-          );
           // Bonus brake charge reward every 5 cores!
           if (brakeRef.current.charges < 5) {
             brakeRef.current.charges += 1;

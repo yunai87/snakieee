@@ -104,21 +104,21 @@ export const CONFIG = {
     group: 'RULES',
   },
   initialSpeed: {
-    value: 0.675,
+    value: 0.52,
     type: 'number',
     label: 'Base Step Interval (s)',
     group: 'RULES',
   },
   minSpeed: {
-    value: 0.375,
+    value: 0.2,
     type: 'number',
     label: 'Minimum Step Interval (s)',
     group: 'RULES',
   },
   speedStep: {
-    value: 0.01,
+    value: 0.2,
     type: 'number',
-    label: 'Speed Boost per 5 Orbs',
+    label: 'Speed Boost per Orb (fraction)',
     group: 'RULES',
   },
   brakeCharges: {

@@ -4,7 +4,7 @@
       "name": "initialSpeed",
       "type": "number",
       "label": "Base Step Interval (s)",
-      "default": 0.675,
+      "default": 0.52,
       "min": 0.1,
       "max": 1.0,
       "step": 0.01
@@ -12,11 +12,11 @@
     {
       "name": "speedStep",
       "type": "number",
-      "label": "Speed Boost per 5 Orbs",
-      "default": 0.01,
-      "min": 0.005,
-      "max": 0.03,
-      "step": 0.005
+      "label": "Speed Boost per Orb (fraction)",
+      "default": 0.2,
+      "min": 0,
+      "max": 0.5,
+      "step": 0.05
     },
     {
       "name": "brakeCharges",
@@ -74,8 +74,8 @@
     }
   ],
   "values": {
-    "initialSpeed": 0.675,
-    "speedStep": 0.01,
+    "initialSpeed": 0.52,
+    "speedStep": 0.2,
     "brakeCharges": 3,
     "brakeDuration": 3.0,
     "hazardWarningTime": 1.0,
