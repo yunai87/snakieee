@@ -98,9 +98,9 @@ export const CONFIG = {
 
   // RULES & GAMEPLAY
   gridSize: {
-    value: 24,
+    value: 18,
     type: 'number',
-    label: 'Grid Dimension (24x24)',
+    label: 'Grid Dimension (18x18)',
     group: 'RULES',
   },
   initialSpeed: {

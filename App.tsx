@@ -156,10 +156,10 @@ export default function App() {
 
   // Grid layout geometry within canvas
   const cellSize = 28;
-  const arenaPixelWidth = gridSize * cellSize; // 672
-  const arenaPixelHeight = gridSize * cellSize; // 672
-  const arenaX = Math.floor((canvasWidth - arenaPixelWidth) / 2); // 352
-  const arenaY = Math.floor((canvasHeight - arenaPixelHeight) / 2); // 48
+  const arenaPixelWidth = gridSize * cellSize; // 504 at 18x18
+  const arenaPixelHeight = gridSize * cellSize; // 504 at 18x18
+  const arenaX = Math.floor((canvasWidth - arenaPixelWidth) / 2); // 436
+  const arenaY = Math.floor((canvasHeight - arenaPixelHeight) / 2); // 132
 
   if (!stepperRef.current) {
     const stepMs = getConfig('stepMs');
