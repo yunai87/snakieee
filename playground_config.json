@@ -4,9 +4,9 @@
       "name": "initialSpeed",
       "type": "number",
       "label": "Base Step Interval (s)",
-      "default": 0.18,
+      "default": 0.3,
       "min": 0.1,
-      "max": 0.3,
+      "max": 0.5,
       "step": 0.01
     },
     {
@@ -74,7 +74,7 @@
     }
   ],
   "values": {
-    "initialSpeed": 0.18,
+    "initialSpeed": 0.3,
     "speedStep": 0.01,
     "brakeCharges": 3,
     "brakeDuration": 3.0,
