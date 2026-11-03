@@ -91,6 +91,9 @@ interface TurnIndicator {
   alpha: number;
 }
 
+// Built-in Teachable Machine pose model (左傾 / 右傾 / 自然狀態 / 暫停)
+const DEFAULT_TM_MODEL_URL = 'https://teachablemachine.withgoogle.com/models/AYRH8wtQQ/';
+
 // Inject a CDN <script> once and resolve when it has loaded
 const scriptPromises: Record<string, Promise<void>> = {};
 function loadScriptOnce(src: string): Promise<void> {
@@ -194,9 +197,9 @@ export default function App() {
     const fromQuery = new URLSearchParams(window.location.search).get('tm');
     if (fromQuery) return fromQuery;
     try {
-      return localStorage.getItem('kinetic_serpent_tm_url') || '';
+      return localStorage.getItem('kinetic_serpent_tm_url') || DEFAULT_TM_MODEL_URL;
     } catch {
-      return '';
+      return DEFAULT_TM_MODEL_URL;
     }
   });
   const [tmStatus, setTmStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
@@ -713,9 +716,12 @@ export default function App() {
         workCtx.restore();
 
         let predictions: {className: string; probability: number}[];
+        let personVisible = true;
         if (tm.kind === 'pose') {
           const {pose, posenetOutput} = await tm.model.estimatePose(work);
           predictions = await tm.model.predict(posenetOutput);
+          // Pose classifiers still guess a class on an empty frame; ignore those
+          personVisible = !!pose && pose.score >= 0.3;
           const preview = tmPreviewCanvasRef.current;
           if (preview) {
             const pctx = preview.getContext('2d')!;
@@ -739,10 +745,11 @@ export default function App() {
         if (cancelled) return;
 
         const top = predictions.reduce((a, b) => (b.probability > a.probability ? b : a));
-        setTmTopLabel(top.className);
-        setPoseConfidence(top.probability);
+        setTmTopLabel(personVisible ? top.className : '（沒偵測到人）');
+        setPoseConfidence(personVisible ? top.probability : 0);
 
-        const candidate = top.probability >= 0.85 ? labelToGesture(top.className) : 'NEUTRAL';
+        const candidate =
+          personVisible && top.probability >= 0.85 ? labelToGesture(top.className) : 'NEUTRAL';
         const buffer = poseBufferRef.current;
         if (buffer.gesture === candidate) {
           buffer.count += 1;
