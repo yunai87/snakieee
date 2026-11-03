@@ -104,13 +104,13 @@ export const CONFIG = {
     group: 'RULES',
   },
   initialSpeed: {
-    value: 0.3,
+    value: 0.45,
     type: 'number',
     label: 'Base Step Interval (s)',
     group: 'RULES',
   },
   minSpeed: {
-    value: 0.15,
+    value: 0.25,
     type: 'number',
     label: 'Minimum Step Interval (s)',
     group: 'RULES',
