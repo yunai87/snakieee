@@ -1,0 +1,86 @@
+{
+  "schema": [
+    {
+      "name": "initialSpeed",
+      "type": "number",
+      "label": "Base Step Interval (s)",
+      "default": 0.18,
+      "min": 0.1,
+      "max": 0.3,
+      "step": 0.01
+    },
+    {
+      "name": "speedStep",
+      "type": "number",
+      "label": "Speed Boost per 5 Orbs",
+      "default": 0.01,
+      "min": 0.005,
+      "max": 0.03,
+      "step": 0.005
+    },
+    {
+      "name": "brakeCharges",
+      "type": "number",
+      "label": "Starting Brake Charges",
+      "default": 3,
+      "min": 1,
+      "max": 6,
+      "step": 1
+    },
+    {
+      "name": "brakeDuration",
+      "type": "number",
+      "label": "Shield Freeze Duration (s)",
+      "default": 3.0,
+      "min": 1.5,
+      "max": 5.0,
+      "step": 0.5
+    },
+    {
+      "name": "hazardWarningTime",
+      "type": "number",
+      "label": "Hazard Warning Time (s)",
+      "default": 1.0,
+      "min": 0.5,
+      "max": 2.5,
+      "step": 0.1
+    },
+    {
+      "name": "scorePerFood",
+      "type": "number",
+      "label": "Score per Energy Core",
+      "default": 10,
+      "min": 5,
+      "max": 50,
+      "step": 5
+    },
+    {
+      "name": "defaultMusicVolume",
+      "type": "number",
+      "label": "Default Music Volume",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "name": "defaultSfxVolume",
+      "type": "number",
+      "label": "Default SFX Volume",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    }
+  ],
+  "values": {
+    "initialSpeed": 0.18,
+    "speedStep": 0.01,
+    "brakeCharges": 3,
+    "brakeDuration": 3.0,
+    "hazardWarningTime": 1.0,
+    "scorePerFood": 10,
+    "defaultMusicVolume": 0.5,
+    "defaultSfxVolume": 0.6
+  }
+}

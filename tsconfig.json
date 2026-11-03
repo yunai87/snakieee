@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",                   /* Target modern JavaScript features */
+    "lib": ["DOM", "DOM.Iterable", "ESNext"], /* Load DOM model for browser API type-checking */
+    "allowJs": true,
+    "skipLibCheck": true,                 /* Skip checking d.ts files to bypass external conflicts */
+    "esModuleInterop": true,              /* Enable ESM/CommonJS import interoperability */
+    "allowSyntheticDefaultImports": true,
+    "strict": false,                      /* Disable strict typing validation; prioritize variable existence */
+    "noImplicitAny": false,               /* Prevent failure on implicit variable types */
+    "strictNullChecks": true,            /* Prevent failure on potential null values */
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,   /* Block logic bugs in switch statements */
+    "module": "ESNext",
+    "moduleResolution": "bundler",        /* Use modern bundler resolution for local imports */
+    "resolveJsonModule": true,            /* Allow direct importing of .json configs */
+    "isolatedModules": true,              /* Enforce file isolation required by esbuild */
+    "noEmit": true,                       /* dry-run type check, do not write files to disk */
+    "jsx": "react-jsx"                    /* Enable modern React JSX transform */
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
+}

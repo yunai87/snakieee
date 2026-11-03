@@ -1,0 +1,105 @@
+{
+  "title": "Kinetic Serpent",
+  "hook": "Steer cyber serpent with body",
+  "game_overview": "A modern arcade snake game steered through real-time body motion and relative turning, featuring hazard dodging and time-freeze shields.",
+  "artstyle": "cyberpunk-neon",
+  "genre": "arcade",
+  "winning_condition": "Achieve high score records without time limit by surviving escalating hazard density and collecting energy cores.",
+  "losing_condition": "Serpent collides with perimeter walls, its own body segments, or red kinetic hazard mines.",
+  "player_mode": "single_player",
+  "supported_orientations": [
+    "landscape",
+    "wide"
+  ],
+  "input_methods": [
+    "keyboard",
+    "touch"
+  ],
+  "score_options": {
+    "score_type": "points",
+    "score_order": "higher_is_better"
+  },
+  "low_end_device_support": true,
+  "mobile_playable": true,
+  "tv_playable": false,
+  "language": [
+    "zh-TW",
+    "en"
+  ],
+  "content_descriptors": [],
+  "controls": [
+    {
+      "input": "Body Lean Left / Arrow Left Key / Virtual Left Button",
+      "action": "Rotate serpent 90 degrees counter-clockwise relative to its current movement heading."
+    },
+    {
+      "input": "Body Lean Right / Arrow Right Key / Virtual Right Button",
+      "action": "Rotate serpent 90 degrees clockwise relative to its current movement heading."
+    },
+    {
+      "input": "Arms Crossed (Shield Freeze) / Spacebar / Virtual Shield Button",
+      "action": "Trigger emergency brake: serpent stops in place for 3 seconds while activating an invulnerable energy shield (consumes 1 brake charge)."
+    },
+    {
+      "input": "Neutral Pose",
+      "action": "Maintain forward movement heading without changing orientation."
+    }
+  ],
+  "sections": [
+    {
+      "title": "Design Pillars",
+      "content": "1. Embodied Immersion: Translating physical upper-body posture directly into high-stakes arcade maneuvers. 2. Relative Steering Precision: Maintaining classic arcade turning simplicity anchored to the serpent's perspective. 3. Clutch Tactical Brakes: Limited-use 3-second freeze barriers turning claustrophobic grid traps into breather windows.",
+      "summary": "Core pillars focusing on somatic intuition, twitch arcade reflex, and strategic emergency pacing."
+    },
+    {
+      "title": "Core Loop",
+      "content": "The serpent glides forward continuously at steady tick intervals. Players physically lean left or right to command 90-degree relative turns. Consuming green energy orbs rewards +10 points and elongates the tail, while dynamically spawning static red hazard mines. When boxed into corners, players trigger Shield Freeze to halt for 3 seconds, surveying the grid. Game over triggers upon perimeter wall crash, self-tail collision, or mine impact.",
+      "summary": "Navigate grid, collect energy cores, evade lethal hazards, and trigger emergency freeze buffers."
+    },
+    {
+      "title": "Movement & Scrolling Alignment",
+      "content": "Scrolling Axis: None (Bounded Arena on a high-visibility 24x24 logical grid). Asset Orientation Baseline: True 90-degree orthogonal overhead view, with serpent head facing its instant vector (0, 90, 180, 270 degrees). Movement Physics Dynamics: Discrete grid advancement on fixed tick timer (accelerating every 5 energy orbs eaten). Camera Behavior: Static locked camera spanning the entirety of the primary canvas.",
+      "summary": "Bounded 2D orthogonal grid arena with 4-directional relative steering."
+    },
+    {
+      "title": "Teachable Machine Pose Integration & Anti-Jitter",
+      "content": "Layout splits into Left (Arcade Canvas) and Right (Webcam Viewport and AI Diagnostics). Loads @tensorflow/tfjs and @teachablemachine/pose from CDN. Prediction probability must exceed 0.85 to qualify as an active posture. Anti-jitter pipeline enforces a 3-consecutive-frame buffer for 'Lean_Left', 'Lean_Right', and 'Shield_Freeze' before dispatching the turn command, preventing false triggers from minor human involuntary sway.",
+      "summary": "Dual-column split layout with TensorFlow.js pose pipeline and 3-frame debounce threshold."
+    },
+    {
+      "title": "Visual Hierarchy & Layering",
+      "content": "Layer Separation: Background uses dark deep-navy grid lines (#0a0f1d) with zero collision distractions. Playfield features radiant electric-cyan serpent (#00f0ff), vivid lime-emerald energy food (#00ff88), and high-contrast pulsating crimson hazard mines (#ff0055). HUD Overlay: Top bar displays Current Score, High Score record, and glowing Shield Brake counters outside the playfield zone.",
+      "summary": "High-contrast cyberpunk neon palette prioritizing hazard readability."
+    },
+    {
+      "title": "Fairness Tools & Hazards",
+      "content": "Hazard mines spawn with a 1-second translucent warning flicker before solidifying into lethal geometry, ensuring players are never instantly eliminated by an unfair instant spawn on top of their trajectory. Emergency brakes display a radial 3-second countdown gauge.",
+      "summary": "Clear warning cues and predictable brake mechanics."
+    },
+    {
+      "title": "Juice & Game Feel",
+      "content": "Input Juice: Visual direction arrows briefly flash beneath the serpent head upon executing a valid turn. State Change Juice: Chromatic trail particles emit behind tail nodes; energy shield projects a rotating hexagonal aura during brake freeze. Impact Juice: Screen shake on hazard collision with CRT static flash on Game Over.",
+      "summary": "Multi-tier sensory feedback for turns, eating, and collisions."
+    },
+    {
+      "title": "Social Mechanics & Audience",
+      "content": "Built for arcade gamers, tech demo enthusiasts, and casual players seeking hands-free, body-driven fitness gameplay. Features persistent localStorage High Score tracking.",
+      "summary": "Competitive local high score chasing and interactive webcam novelty."
+    },
+    {
+      "title": "Accessibility",
+      "content": "Seamless fallback to Arrow Left / Arrow Right / Spacebar controls allows instantaneous gameplay testing without requiring a webcam or TensorFlow model load. Status pill indicators show AI connection health, webcam frame rate, and active detected gesture.",
+      "summary": "Full dual-input redundancy and visual indicators."
+    },
+    {
+      "title": "Structural Integrity",
+      "content": "Finite state machine with states: MENU, PLAYING, FROZEN_BRAKE, and GAME_OVER. Game Over overlay provides immediate summary score, best score badge, and an instant Restart trigger via button or Spacebar.",
+      "summary": "State machine managing title, active play, freeze pause, and game over screens."
+    },
+    {
+      "title": "Virtual Touch Controls Implementation",
+      "content": "Conditional mobile touch controls render responsive Left Turn, Right Turn, and Shield Brake buttons in the viewport lower corners. Wired with onPointerDown, onPointerUp, onPointerLeave, touch-none CSS, and pointer-events-auto on action buttons.",
+      "summary": "Conditional touch buttons for mobile testing."
+    }
+  ]
+}
